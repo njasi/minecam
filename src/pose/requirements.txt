@@ -1,1 +1,7 @@
 headpose
+# compile opencv on linux machines for acceptable fps
+opencv-python
+matplotlib
+dlib
+mtcnn
+tensorflow
