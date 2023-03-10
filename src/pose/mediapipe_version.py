@@ -3,6 +3,12 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import time
+import pyautogui
+
+pyautogui.PAUSE = 0
+pyautogui.FAILSAFE = True
+
+MOUSE_SPEED = 100 # pixels / second
 
 # initialize Pose estimator
 mp_drawing = mp.solutions.drawing_utils
@@ -27,6 +33,22 @@ prev_frame_time = 0
 new_frame_time = 0
 
 
+class StateHead:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
+class State:
+
+    def __init__(self):
+        self.head = StateHead()
+        self.handleft = 0
+        self.handright = 0
+        self.click = False
+
+state = State()
+
+
 
 # define a video capture object
 vid = cv2.VideoCapture(0)
@@ -49,13 +71,13 @@ while True:
     # process the RGB frame to get the result
 
     RGB.flags.writeable = False
-    results = pose.process(RGB)
+    results_pose = pose.process(RGB)
     results_face = face_mesh.process(RGB)
     RGB.flags.writeable = True
 
-
     # face direction detection
     image = frame
+    from autopilot.input import Mouse
     img_h, img_w, img_c = image.shape
     face_3d = []
     face_2d = []
@@ -82,7 +104,7 @@ while True:
             # Convert it to the NumPy array
             face_3d = np.array(face_3d, dtype=np.float64)
 
-            # The camera matrix
+            # The camera matriautopilotx
             focal_length = 1 * img_w
 
             cam_matrix = np.array([ [focal_length, 0, img_h / 2],
@@ -105,7 +127,8 @@ while True:
             # Get the y rotation degree
             x = angles[0] * 360
             y = angles[1] * 360
-
+            state.head.x = x
+            state.head.y = y
             # print(y)
 
             # See where the user's head tilting
@@ -129,29 +152,75 @@ while True:
             cv2.line(image, p1, p2, (255, 0, 0), 2)
 
             # Add the text on the image
-            cv2.putText(image, text, (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            cv2.putText(image, text, (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 
-    # print(results.pose_landmarks)
+    # Checking hand position
 
+    state.handleft = 0
+    state.handright = 0
+    if results_pose.pose_landmarks:
+        left_wrist = results_pose.pose_landmarks.landmark[15]
+        right_wrist = results_pose.pose_landmarks.landmark[16]
+        left_shoulder= results_pose.pose_landmarks.landmark[11]
+        right_shoulder = results_pose.pose_landmarks.landmark[12]
+        if(left_wrist.y < left_shoulder.y):
+            state.handleft = 1
+        if(right_wrist.y < right_shoulder.y):
+            state.handright = 1
+        cv2.putText(frame, "L,R hand: {},{}".format(state.handleft,state.handright), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        mp_drawing.draw_landmarks(
+                frame, results_pose.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-    mp_drawing.draw_landmarks(
-            frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
   
     # Calculating the fps
     new_frame_time = time.time()
     fps = 1/(new_frame_time-prev_frame_time)
+    time_change = new_frame_time-prev_frame_time
     prev_frame_time = new_frame_time
     fps = int(fps)
     fps = str(fps)
-    cv2.putText(frame, "FPS: " + fps, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 255, 0), 2)
-
+    cv2.putText(frame, "FPS: " + fps, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 255, 0), 2)
 
 
 
     # show the final output
     cv2.imshow('Output', frame)
+
+
+
+    # Mouse movements and clicks
+    # x, y = mouse.position()
+    print(pyautogui.position() )
+    shift = MOUSE_SPEED * time_change
+    if state.head.y < -10:
+        # Looking Right
+        pyautogui.moveRel(shift, 0, duration=0)
+    elif state.head.y > 10:
+        # Looking Left
+        pyautogui.moveRel(-1*shift, 0, duration=0)
+
+    if state.head.x < 10:
+        # Looking Down
+        pyautogui.moveRel(0, shift, duration=0)
+        pass
+    elif state.head.x > 20:
+        # Looking Up
+        pyautogui.moveRel(0, -1 * shift, duration=0)
+        pass
+
+
+    if state.handright == 0 and state.handleft == 0:
+        state.click = False
+
+    if not state.click and state.handright:
+        state.click = True
+        pyautogui.click(button = "right")
+
+    if not state.click and state.handleft:
+        state.click = True
+        pyautogui.click()
 
 
 
