@@ -131,9 +131,6 @@ def pose_tracking():
                 # Convert it to the NumPy array
                 face_2d = np.array(face_2d, dtype=np.float64)
 
-                # Convert it to the NumPy array
-                face_3d = np.array(face_3d, dtype=np.float64)
-
                 # The camera matriautopilotx
                 focal_length = 1 * img_w
 
@@ -166,9 +163,9 @@ def pose_tracking():
                     text = "Looking Left"
                 elif y > 10:
                     text = "Looking Right"
-                elif x < 10:
+                elif x < 5:
                     text = "Looking Down"
-                elif x > 20:
+                elif x > 15:
                     text = "Looking Up"
                 else:
                     text = "Looking Forward"
@@ -183,7 +180,10 @@ def pose_tracking():
 
                 # Add the text on the image
                 cv2.putText(image, text, (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-
+        else:
+            cv2.putText(image, "NO face detected, adjust your position", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            state.head.x = 0
+            state.head.y = 0
 
         # Checking hand position
 
@@ -233,12 +233,12 @@ def pose_tracking():
             # Looking Left
             x_speed = -1 * (state.head.y - 10) / 3 * shift
 
-        if state.head.x < 10:
+        if state.head.x < 5:
             # Looking Down
 
             y_speed = -1 * (state.head.x - 10) / 3 * shift
             pass
-        elif state.head.x > 20:
+        elif state.head.x > 15:
             # Looking Up
             y_speed = -1 * (state.head.x - 20) / 3 * shift
             pass
