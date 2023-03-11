@@ -7,12 +7,12 @@ from autopilot.input import Mouse
 from math import ceil
 
 
-file = open("src/pose/host.txt")
 
 xdo = Xdo()
 MOUSE = Mouse.create()
-HOST = file.readline()  # Standard loopback interface address (localhost)
 PORT = 55555  # Port to listen on (non-privileged ports are > 1023)
+file = open("src/pose/.host")
+HOST = file.readline()  # Standard loopback interface address (localhost)
 file.close()
 
 print(HOST)

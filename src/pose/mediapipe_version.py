@@ -13,8 +13,12 @@ from math import ceil
 faulthandler.enable()
 
 MOUSE_SPEED = 100 # pixels / second
-HOST = "127.0.0.1"  # The server's hostname or IP address
 PORT = 55555  # The port used by the server
+
+file = open("src/pose/.host")
+HOST = file.readline()  # Standard loopback interface address (localhost)
+file.close()
+
 
 class StateHead:
     def __init__(self):
