@@ -31,7 +31,13 @@ window_size = xdo.get_window_size(win_id)
 midpt = (int(window_size[0] / 2), int(window_size[1] / 2))
 
 
+STATE = {
+    "walking": 0
+}
+
+
 def apply_action(action):
+    global STATE
     if(action["action"] == "mouse_move"):
         x, y = MOUSE.position()
 
@@ -66,6 +72,13 @@ def apply_action(action):
     elif(action["action"] == "click_release"):
         MOUSE.release(button=1)
         MOUSE.release(button=3)
+    elif(action["action"] == "knee_down"):
+        STATE["walking"] = False
+        xdo.send_keysequence_window_up(win_id, b"w")
+    elif(action["action"] == "knee_up"):
+        STATE["walking"] = True
+        xdo.send_keysequence_window_down(win_id, b"w")
+
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
