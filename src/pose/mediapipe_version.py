@@ -269,7 +269,8 @@ def pose_tracking():
             }
             send_json(inventory)
             state.inventory = True                  
-        else:                    
+
+        if state.handright == 0 or state.handleft == 0:               
             state.inventory = False
 
         if state.click and state.handright == 0 and state.handleft == 0:
