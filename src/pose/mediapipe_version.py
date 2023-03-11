@@ -3,17 +3,17 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import time
-import pyautogui
+import json
 import traceback
-from autopilot.input import Mouse
-from autopilot.input import Keyboard
-mouse = Mouse.create()
-keyboard = Keyboard.create()
-pyautogui.PAUSE = 0
-pyautogui.FAILSAFE = True
+import faulthandler
+import socket
+from math import ceil
+
+faulthandler.enable()
 
 MOUSE_SPEED = 100 # pixels / second
-
+HOST = "127.0.0.1"  # The server's hostname or IP address
+PORT = 55555  # The port used by the server
 
 class StateHead:
     def __init__(self):
@@ -28,7 +28,26 @@ class State:
         self.handright = 0
         self.click = False
         self.inventory = False
+        self.frame = 0
 
+
+
+
+
+
+
+while True:
+    try:
+        SOCKET = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        SOCKET.connect((HOST, PORT))
+        break
+    except:
+        print("Could not connect to interface. Waiting 5 seconds.")
+        time.sleep(5)
+
+
+def send_json(j):
+    SOCKET.sendall(bytes(json.dumps(j),encoding="utf-8"))
 
 
 def pose_tracking():
@@ -60,6 +79,7 @@ def pose_tracking():
     vid = cv2.VideoCapture(0)
 
     while True:
+        state.frame +=1
         # Capture the video frame
         # by frame
         ret, frame = vid.read()
@@ -83,7 +103,6 @@ def pose_tracking():
 
         # face direction detection
         image = frame
-        from autopilot.input import Mouse
         img_h, img_w, img_c = image.shape
         face_3d = []
         face_2d = []
@@ -190,16 +209,13 @@ def pose_tracking():
         cv2.putText(frame, "FPS: " + fps, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 255, 0), 2)
 
 
-
         # show the final output
         cv2.imshow('Output', frame)
 
-
+        if(state.frame < 3):
+            continue 
 
         # Mouse movements and clicks
-        # x, y = mouse.position()
-
-        x, y = mouse.position()
         shift = MOUSE_SPEED * time_change
 
         x_speed = 0
@@ -223,16 +239,15 @@ def pose_tracking():
             pass
         
         try:
-            # print()
             # print(state.head.x,state.head.y)
             # print(x_speed,y_speed)
-
-            # time1 = time.time()
-            # TODO thread?
-            mouse.move(x + x_speed, y + y_speed)
-            # time2 = time.time()
-            # print(time2-time1)
-
+            if(abs(x_speed) > 0 or abs(y_speed) > 0):
+                move = {
+                    "action":"mouse_move",
+                    "x": min(ceil(x_speed),20),
+                    "y": min(ceil(y_speed),20)
+                }
+                send_json(move)
         except:
             print("\n\nPOSE DETECTION INTERFACE ERROR:\n")
             print(traceback.format_exc())
@@ -240,31 +255,44 @@ def pose_tracking():
             continue
 
         if not state.inventory and state.handright == 1 and state.handleft == 1:
-            keyboard.press("e", delay=0.001)
+            inventory = {
+                "action":"keypress",
+                "key": 'e'
+            }
+            send_json(inventory)
             state.inventory = True                  
         else:                    
             state.inventory = False
 
-        if state.handright == 0 and state.handleft == 0:
+        if state.click and state.handright == 0 and state.handleft == 0:
             state.click = False
-            mouse.release(button=1)
-            mouse.release(button=3)
+            click = {
+                "action":"click_release",
+            }
+            send_json(click)
 
         if not state.click and state.handright:
             state.click = True
-            mouse.press(button=3)
+            click = {
+                "action":"click",
+                "button":3
+            }
+            send_json(click)
 
         if not state.click and state.handleft:
             state.click = True
-            mouse.press(button=1)
-
+            click = {
+                "action":"click",
+                "button":1
+            }
+            send_json(click)
 
 
         # the 'q' button is set as the
         # quitting button you may use any
         # desired button of your choice
         if cv2.waitKey(1) & 0xFF == ord("q"):
-            breakframe
+            break
 
     # After the loop release the cap object
     vid.release()
@@ -273,3 +301,5 @@ def pose_tracking():
 
 
 pose_tracking()
+
+
