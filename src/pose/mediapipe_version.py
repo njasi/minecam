@@ -247,6 +247,7 @@ def pose_tracking():
             # print(state.head.x,state.head.y)
             # print(x_speed,y_speed)
             if(abs(x_speed) > 0 or abs(y_speed) > 0):
+                print(state.head.x,state.head.y)
                 move = {
                     "action":"mouse_move",
                     "x": min(ceil(x_speed),20),
