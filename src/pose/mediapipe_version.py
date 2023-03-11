@@ -31,9 +31,12 @@ class State:
         self.head = StateHead()
         self.handleft = 0
         self.handright = 0
+        self.kneeleft = 0
+        self.kneeright = 0
         self.click = False
         self.inventory = False
         self.frame = 0
+        self.walking = True
 
 
 
@@ -67,7 +70,7 @@ def pose_tracking():
 
     mp_face_mesh = mp.solutions.face_mesh
     face_mesh = mp_face_mesh.FaceMesh(
-        min_detection_confidence=0.5, 
+        min_detection_confidence=0.5,
         min_tracking_confidence=0.5)
 
 
@@ -126,8 +129,8 @@ def pose_tracking():
                         face_2d.append([x, y])
 
                         # Get the 3D Coordinates
-                        face_3d.append([x, y, lm.z])       
-                
+                        face_3d.append([x, y, lm.z])
+
                 # Convert it to the NumPy array
                 face_2d = np.array(face_2d, dtype=np.float64)
 
@@ -150,7 +153,7 @@ def pose_tracking():
                 rmat, jac = cv2.Rodrigues(rot_vec)
 
                 # Get aprev_frame_time = 0
-    
+
                 angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
 
                 # Get the y rotation degree
@@ -177,7 +180,7 @@ def pose_tracking():
 
                 p1 = (int(nose_2d[0]), int(nose_2d[1]))
                 p2 = (int(nose_3d_projection[0][0][0]), int(nose_3d_projection[0][0][1]))
-                
+
                 cv2.line(image, p1, p2, (255, 0, 0), 2)
 
                 # Add the text on the image
@@ -204,8 +207,21 @@ def pose_tracking():
             mp_drawing.draw_landmarks(
                     frame, results_pose.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
+        # same thing as before, but knees
+        state.kneeleft = 0
+        state.kneeright = 0
+        if results_pose.pose_landmarks:
+            left_hip = results_pose.pose_landmarks.landmark[23]
+            right_hip = results_pose.pose_landmarks.landmark[24]
+            left_knee = results_pose.pose_landmarks.landmark[25]
+            right_knee = results_pose.pose_landmarks.landmark[26]
+            if(left_knee > left_hip):
+                state.kneeleft = 1
+            if(right_knee > right_hip):
+                state.kneeright = 1
+            cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (20, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
-    
+
         # Calculating the fps
         new_frame_time = time.time()
         fps = 1/(new_frame_time-prev_frame_time)
@@ -220,7 +236,7 @@ def pose_tracking():
         cv2.imshow('Output', frame)
 
         if(state.frame < 3):
-            continue 
+            continue
 
         # Mouse movements and clicks
         shift = MOUSE_SPEED * time_change
@@ -230,7 +246,7 @@ def pose_tracking():
         if state.head.y < -10:
             # Looking Right
             x_speed = -1 * (state.head.y + 10) / 3 * shift
-            
+
         elif state.head.y > 10:
             # Looking Left
             x_speed = -1 * (state.head.y - 10) / 3 * shift
@@ -244,7 +260,7 @@ def pose_tracking():
             # Looking Up
             y_speed = -1 * (state.head.x - 15) / 3 * shift
             pass
-        
+
         try:
             # print(state.head.x,state.head.y)
             # print(x_speed,y_speed)
@@ -268,9 +284,9 @@ def pose_tracking():
                 "key": 'e'
             }
             send_json(inventory)
-            state.inventory = True                  
+            state.inventory = True
 
-        if state.handright == 0 or state.handleft == 0:               
+        if state.handright == 0 or state.handleft == 0:
             state.inventory = False
 
         if state.click and state.handright == 0 and state.handleft == 0:
@@ -295,6 +311,18 @@ def pose_tracking():
                 "button":1
             }
             send_json(click)
+
+        if not state.walking and (state.kneeleft or state.kneeright):
+            knee = {
+                "action":"knee_up"
+            }
+            send_json(knee)
+
+        if state.walking and (state.kneeleft == 0 and  state.kneeright == 0):
+            knee = {
+                "action":"knee_down"
+            }
+            send_json(knee)
 
 
         # the 'q' button is set as the
