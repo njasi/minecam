@@ -238,11 +238,11 @@ def pose_tracking():
         if state.head.x < 5:
             # Looking Down
 
-            y_speed = -1 * (state.head.x - 10) / 3 * shift
+            y_speed = -1 * (state.head.x - 5) / 3 * shift
             pass
         elif state.head.x > 15:
             # Looking Up
-            y_speed = -1 * (state.head.x - 20) / 3 * shift
+            y_speed = -1 * (state.head.x - 15) / 3 * shift
             pass
         
         try:
