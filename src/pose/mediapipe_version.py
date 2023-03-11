@@ -215,9 +215,9 @@ def pose_tracking():
             right_hip = results_pose.pose_landmarks.landmark[24]
             left_knee = results_pose.pose_landmarks.landmark[25]
             right_knee = results_pose.pose_landmarks.landmark[26]
-            if(left_knee > left_hip):
+            if(left_knee.y > left_hip.y):
                 state.kneeleft = 1
-            if(right_knee > right_hip):
+            if(right_knee.y > right_hip.y):
                 state.kneeright = 1
             cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (20, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
