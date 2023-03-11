@@ -23,7 +23,7 @@ file.close()
 class StateHead:
     def __init__(self):
         self.x = 0
-        self.y = 0
+        self.y = 7
 
 class State:
 
@@ -185,7 +185,7 @@ def pose_tracking():
         else:
             cv2.putText(image, "NO face detected, adjust your position", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             state.head.x = 0
-            state.head.y = 0
+            state.head.y = 7
 
         # Checking hand position
 
