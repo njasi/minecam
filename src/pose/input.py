@@ -6,11 +6,16 @@ from xdo import Xdo
 from autopilot.input import Mouse
 from math import ceil
 
+
+file = open("src/pose/host.txt")
+
 xdo = Xdo()
 MOUSE = Mouse.create()
-HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
+HOST = file.readline()  # Standard loopback interface address (localhost)
 PORT = 55555  # Port to listen on (non-privileged ports are > 1023)
+file.close()
 
+print(HOST)
 
 time.sleep(5)
 win_id = xdo.select_window_with_click()
@@ -40,13 +45,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 MOUSE.move(x+action["x"],y+action["y"])
                 pass
             elif(action["action"] == "keypress"):
-                # xdo.enter_text_window(win_id, action.key, delay=0)
+                key = bytes(action["key"])
+                print(key)
+                xdo.enter_text_window(win_id, key)
                 pass
             elif(action["action"] == "click"):
+                # 4 => scroll up
                 MOUSE.press(button=action["button"])
             elif(action["action"] == "click_release"):
                 MOUSE.release(button=1)
                 MOUSE.release(button=3)
-
             if not data:
                 break

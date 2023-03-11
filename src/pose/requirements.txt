@@ -2,4 +2,3 @@ dlib
 mtcnn
 tensorflow
 numpy
-autopilot
