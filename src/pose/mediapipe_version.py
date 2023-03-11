@@ -131,6 +131,8 @@ def pose_tracking():
                 # Convert it to the NumPy array
                 face_2d = np.array(face_2d, dtype=np.float64)
 
+                face_3d = np.array(face_3d, dtype=np.float64)
+
                 # The camera matriautopilotx
                 focal_length = 1 * img_w
 
