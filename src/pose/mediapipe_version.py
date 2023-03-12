@@ -40,6 +40,7 @@ class State:
         self.frame = 0
         self.walking = False
         self.handdist = 100
+        self.clasp = False
 
 
 
@@ -197,6 +198,7 @@ def pose_tracking():
 
         state.handleft = 0
         state.handright = 0
+        state.handdist = 100
         if results_pose.pose_landmarks:
             left_wrist = results_pose.pose_landmarks.landmark[15]
             right_wrist = results_pose.pose_landmarks.landmark[16]
@@ -208,10 +210,10 @@ def pose_tracking():
                 state.handright = 1
 
             state.handdist = sqrt((left_wrist.x - right_wrist.x)**2 + (left_wrist.y - right_wrist.y)**2 )
-            cv2.putText(frame, "L,R hand: {},{}".format(state.handleft,state.handright), (200, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-            cv2.putText(frame, "Hand Distance: {}".format(state.handleft,state.handright), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             mp_drawing.draw_landmarks(
                     frame, results_pose.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        cv2.putText(frame, "L,R hand: {},{}".format(state.handleft,state.handright), (200, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "Hand Distance: {}".format(state.handdist), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         # same thing as before, but knees
         state.kneeleft = 0
@@ -225,7 +227,7 @@ def pose_tracking():
                 state.kneeleft = 1
             if(right_knee.y - KNEE_ADJUST < right_hip.y):
                 state.kneeright = 1
-            cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (500, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (400, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 
         # Calculating the fps
@@ -298,23 +300,31 @@ def pose_tracking():
         if state.handright == 0 or state.handleft == 0:
             state.inventory = False
 
-        # release clicks
-        if state.click and \
-            state.handright == 0 and \
-            state.handleft == 0 and \
-            state.handdist < CLASP_DIST:
-            state.click = False
+
+        # hand clasp
+        if not state.clasp and state.handdist < CLASP_DIST:
+            state.clasp = True
+            click = {
+                "action":"click",
+                "button":4
+            }
+            send_json(click)
+
+        # hand unclasp
+        if state.clasp and state.handdist > CLASP_DIST:
+            state.clasp = True
             click = {
                 "action":"click_release",
             }
             send_json(click)
 
-        # hand clasp
-        if not state.click and state.handdist < CLASP_DIST:
-            state.click = True
+        # release clicks
+        if state.click and \
+            state.handright == 0 and \
+            state.handleft == 0:
+            state.click = False
             click = {
-                "action":"click",
-                "button":4
+                "action":"click_release",
             }
             send_json(click)
 
