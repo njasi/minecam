@@ -284,9 +284,7 @@ def pose_tracking():
             print()
             continue
 
-        if state.handdist < 0.1 and state.handleft == 0 and state.handright == 0:
-
-
+        # inventory
         if not state.inventory and state.handright == 1 and state.handleft == 1:
             inventory = {
                 "action":"keypress",
@@ -294,10 +292,13 @@ def pose_tracking():
             }
             send_json(inventory)
             state.inventory = True
+            continue # avoid sending a click along with the inventory
 
+        # inventory lock
         if state.handright == 0 or state.handleft == 0:
             state.inventory = False
 
+        # release clicks
         if state.click and \
             state.handright == 0 and \
             state.handleft == 0 and \
@@ -308,14 +309,7 @@ def pose_tracking():
             }
             send_json(click)
 
-        if not state.click and state.handright:
-            state.click = True
-            click = {
-                "action":"click",
-                "button":3
-            }
-            send_json(click)
-
+        # hand clasp
         if not state.click and state.handdist < CLASP_DIST:
             state.click = True
             click = {
@@ -324,6 +318,16 @@ def pose_tracking():
             }
             send_json(click)
 
+        # right click
+        if not state.click and state.handright:
+            state.click = True
+            click = {
+                "action":"click",
+                "button":3
+            }
+            send_json(click)
+
+        # left click
         if not state.click and state.handleft:
             state.click = True
             click = {
@@ -332,6 +336,7 @@ def pose_tracking():
             }
             send_json(click)
 
+        # walking
         if not state.walking and (state.kneeleft or state.kneeright):
             knee = {
                 "action":"knee_up"
@@ -339,6 +344,7 @@ def pose_tracking():
             send_json(knee)
             state.walking = True
 
+        # stop walking
         if state.walking and (state.kneeleft == 0 and  state.kneeright == 0):
             knee = {
                 "action":"knee_down"
