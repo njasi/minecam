@@ -52,7 +52,7 @@ def action_loop():
     global ACTION_QUEUE
     print('Action Loop: Running')
     while True:
-        data = queue.get()
+        data = ACTION_QUEUE.get()
         print("Action Loop:\n", data)
         action = parse_action_data(data)
         try:
@@ -62,7 +62,7 @@ def action_loop():
             print("DATA ERROR:\t",data)
             # print(traceback.format_exc(),"\n")
             continue
-        queue.task_done()
+        ACTION_QUEUE.task_done()
 
 
 
