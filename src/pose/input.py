@@ -3,9 +3,11 @@ import socket
 import time
 import json
 import traceback
+import queue
 from xdo import Xdo
 from autopilot.input import Mouse
 from math import ceil
+from threading import Thread
 
 
 # import faulthandler
@@ -18,6 +20,9 @@ PORT = 55555  # Port to listen on (non-privileged ports are > 1023)
 file = open("src/pose/.host")
 HOST = file.readline()  # Standard loopback interface address (localhost)
 file.close()
+
+
+ACTION_QUEUE = queue.Queue()
 
 print("You have 5 seconds to click on your minecraft window.")
 # MOUSE.move(75,480)
@@ -36,12 +41,40 @@ STATE = {
 }
 
 
+def parse_action_data(data):
+    try:
+        action = json.loads(data)
+        return (True,action)
+    except:
+        return (False, -1)
+
+def action_loop():
+    global ACTION_QUEUE
+    print('Action Loop: Running')
+    while True:
+        data = queue.get()
+        print("Action Loop:\n", data)
+        action = parse_action_data(data)
+        try:
+            if "action" in action and action[0]:
+                apply_action(action[1])
+        except:
+            print("DATA ERROR:\t",data)
+            # print(traceback.format_exc(),"\n")
+            continue
+        queue.task_done()
+
+
+
+action_thread = Thread( target = action_loop, args=( ) )
+action_thread.start()
+action_thread.join()
+
+
 def apply_action(action):
     global STATE
     if(action["action"] == "mouse_move"):
         x, y = MOUSE.position()
-
-        print(x,y)
         try:
             x_new = x+action["x"]
             y_new = y+action["y"]
@@ -64,7 +97,6 @@ def apply_action(action):
         pass
     elif(action["action"] == "keypress"):
         key = bytes(action["key"],encoding='utf8')
-        print(key)
         xdo.enter_text_window(win_id, key)
     elif(action["action"] == "click"):
         MOUSE.press(button=action["button"])
@@ -80,7 +112,6 @@ def apply_action(action):
         xdo.send_keysequence_window_down(win_id, b"w")
 
 
-
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen()
@@ -90,15 +121,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         while True:
             data = conn.recv(1024)
             action = {}
-            try:
-                action = json.loads(data)
-                # print(action)
-                if("action" in action):
-                    apply_action(action)
-            except:
-                print("DATA ERROR:\t",data)
-                # print(traceback.format_exc(),"\n")
-                continue
+
+            ACTION_QUEUE.put(data)
 
             if not data:
                 break
+
