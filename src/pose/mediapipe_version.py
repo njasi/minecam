@@ -8,11 +8,12 @@ import json
 import traceback
 import faulthandler
 import socket
-from math import ceil
+from math import ceil, sqrt
 
 faulthandler.enable()
 
 KNEE_ADJUST = 0.2 #relative frame size, less knee raising required
+CLASP_DIST = 0.05 # distance hands need to be to be considered a clasp
 MOUSE_SPEED = 100 # pixels / second
 PORT = 55555  # The port used by the server
 
@@ -38,6 +39,7 @@ class State:
         self.inventory = False
         self.frame = 0
         self.walking = False
+        self.handdist = 100
 
 
 
@@ -204,7 +206,10 @@ def pose_tracking():
                 state.handleft = 1
             if(right_wrist.y < right_shoulder.y):
                 state.handright = 1
-            cv2.putText(frame, "L,R hand: {},{}".format(state.handleft,state.handright), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
+            state.handdist = sqrt((left_wrist.x - right_wrist.x)**2 + (left_wrist.y - right_wrist.y)**2 )
+            cv2.putText(frame, "L,R hand: {},{}".format(state.handleft,state.handright), (200, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.putText(frame, "Hand Distance: {}".format(state.handleft,state.handright), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             mp_drawing.draw_landmarks(
                     frame, results_pose.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
@@ -220,7 +225,7 @@ def pose_tracking():
                 state.kneeleft = 1
             if(right_knee.y - KNEE_ADJUST < right_hip.y):
                 state.kneeright = 1
-            cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (20, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (500, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 
         # Calculating the fps
@@ -279,6 +284,9 @@ def pose_tracking():
             print()
             continue
 
+        if state.handdist < 0.1 and state.handleft == 0 and state.handright == 0:
+
+
         if not state.inventory and state.handright == 1 and state.handleft == 1:
             inventory = {
                 "action":"keypress",
@@ -290,7 +298,10 @@ def pose_tracking():
         if state.handright == 0 or state.handleft == 0:
             state.inventory = False
 
-        if state.click and state.handright == 0 and state.handleft == 0:
+        if state.click and \
+            state.handright == 0 and \
+            state.handleft == 0 and \
+            state.handdist < CLASP_DIST:
             state.click = False
             click = {
                 "action":"click_release",
@@ -302,6 +313,14 @@ def pose_tracking():
             click = {
                 "action":"click",
                 "button":3
+            }
+            send_json(click)
+
+        if not state.click and state.handdist < CLASP_DIST:
+            state.click = True
+            click = {
+                "action":"click",
+                "button":4
             }
             send_json(click)
 

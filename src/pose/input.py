@@ -67,11 +67,11 @@ def apply_action(action):
         print(key)
         xdo.enter_text_window(win_id, key)
     elif(action["action"] == "click"):
-        # 4 => scroll up
         MOUSE.press(button=action["button"])
     elif(action["action"] == "click_release"):
         MOUSE.release(button=1)
         MOUSE.release(button=3)
+        MOUSE.release(button=4)
     elif(action["action"] == "knee_down"):
         STATE["walking"] = False
         xdo.send_keysequence_window_up(win_id, b"w")
