@@ -68,7 +68,7 @@ def action_loop():
 
 action_thread = Thread( target = action_loop, args=( ) )
 action_thread.start()
-action_thread.join()
+# action_thread.join()
 
 
 def apply_action(action):
