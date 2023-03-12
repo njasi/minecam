@@ -54,10 +54,11 @@ def action_loop():
     while True:
         data = ACTION_QUEUE.get()
         print("Action Loop:\n", data)
-        action = parse_action_data(data)
+        result = parse_action_data(data)
+        action = result[1]
         try:
-            if "action" in action and action[0]:
-                apply_action(action[1])
+            if result[0] and "action" in action:
+                apply_action(action)
         except:
             print("DATA ERROR:\t",data)
             # print(traceback.format_exc(),"\n")
