@@ -13,7 +13,7 @@ from math import ceil, sqrt
 faulthandler.enable()
 
 KNEE_ADJUST = 0.2 #relative frame size, less knee raising required
-CLASP_DIST = 0.05 # distance hands need to be to be considered a clasp
+CLASP_DIST = 0.1 # distance hands need to be to be considered a clasp
 MOUSE_SPEED = 100 # pixels / second
 PORT = 55555  # The port used by the server
 
@@ -59,6 +59,7 @@ while True:
 
 
 def send_json(j):
+    print("ACTION:\n",j)
     SOCKET.sendall(bytes(json.dumps(j),encoding="utf-8"))
 
 
@@ -273,7 +274,6 @@ def pose_tracking():
             # print(state.head.x,state.head.y)
             # print(x_speed,y_speed)
             if(abs(x_speed) > 0 or abs(y_speed) > 0):
-                print(state.head.x,state.head.y)
                 move = {
                     "action":"mouse_move",
                     "x": min(ceil(x_speed),20),
@@ -312,7 +312,7 @@ def pose_tracking():
 
         # hand unclasp
         if state.clasp and state.handdist > CLASP_DIST:
-            state.clasp = True
+            state.clasp = False
             click = {
                 "action":"click_release",
             }
