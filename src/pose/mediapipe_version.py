@@ -36,7 +36,7 @@ class State:
         self.click = False
         self.inventory = False
         self.frame = 0
-        self.walking = True
+        self.walking = False
 
 
 
@@ -215,9 +215,9 @@ def pose_tracking():
             right_hip = results_pose.pose_landmarks.landmark[24]
             left_knee = results_pose.pose_landmarks.landmark[25]
             right_knee = results_pose.pose_landmarks.landmark[26]
-            if(left_knee.y > left_hip.y):
+            if(left_knee.y < left_hip.y):
                 state.kneeleft = 1
-            if(right_knee.y > right_hip.y):
+            if(right_knee.y < right_hip.y):
                 state.kneeright = 1
             cv2.putText(frame, "L,R knee: {},{}".format(state.kneeleft,state.kneeright), (20, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
@@ -317,12 +317,14 @@ def pose_tracking():
                 "action":"knee_up"
             }
             send_json(knee)
+            state.walking = True
 
         if state.walking and (state.kneeleft == 0 and  state.kneeright == 0):
             knee = {
                 "action":"knee_down"
             }
             send_json(knee)
+            state.walking = False
 
 
         # the 'q' button is set as the
